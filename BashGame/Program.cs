@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 
 class Program
 {
@@ -26,19 +28,22 @@ class Program
 
         int player1Wins = 0;
         int player2Wins = 0;
-        int rounds = 1000; // количество итераций, чтобы оценить стратегию
+        int rounds = 100; // количество итераций, чтобы оценить стратегию
 
-        for (int i = 0; i < rounds; i++)
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
+        Parallel.For(0, rounds, i =>
         {
             var result = PlayGame(N, M, player1Strategy, player2Strategy);
             if (result == 1)
                 player1Wins++;
             else if (result == 2)
                 player2Wins++;
-        }
-
+        });
+        stopwatch.Stop();
         Console.WriteLine($"Игрок 1 победил: {player1Wins} раз ({(double)player1Wins / rounds * 100}%)");
         Console.WriteLine($"Игрок 2 победил: {player2Wins} раз ({(double)player2Wins / rounds * 100}%)");
+        Console.WriteLine($"Время выполнения: {stopwatch.ElapsedMilliseconds} миллисекунд.");
     }
 
     static int PlayGame(int N, int M, int strategy1, int strategy2)
@@ -75,7 +80,7 @@ class Program
             case 3: // Тактика Монте-Карло
                 return MonteCarloMove(N, M);
             case 4: // Случайная стратегия
-                return new Random().Next(1, Math.Min(M, N) + 1); // Случайный выбор от 1 до Min(M, N)
+                return new Random(Guid.NewGuid().GetHashCode()).Next(1, Math.Min(M, N) + 1); // Случайный выбор от 1 до Min(M, N)
             default:
                 return 1; // По умолчанию берём 1
         }
@@ -83,8 +88,8 @@ class Program
 
     static int MonteCarloMove(int N, int M)
     {
-        const int simulations = 100; // количество симуляций
-        var winRates = new Dictionary<int, int>();
+        const int simulations = 1000000; // количество симуляций
+        var winRates = new ConcurrentDictionary<int, int>();
 
         for (int take = 1; take <= Math.Min(M, N); take++)
         {
